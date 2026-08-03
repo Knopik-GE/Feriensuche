@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Feriensuche</title>
+<style>
+  :root {
+    --bg: #E4D6B6;
+    --card: #FBF5E7;
+    --ink: #242018;
+    --accent: #B8842E;
+    --accent-dark: #8C6320;
+    --stamp: #9A3B2B;
+    --line: #B7A379;
+    --faint: #8A7A57;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+  header { border-bottom: 2px solid var(--ink); padding: 24px 16px 16px; }
+  h1 { font-size: 24px; margin: 0; text-transform: uppercase; }
+  .subtitle { color: var(--faint); font-size: 12px; margin-top: 4px; }
+  form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 16px;
+  }
+  form label { font-size: 12px; color: var(--faint); display: block; margin-bottom: 4px; }
+  form input {
+    width: 100%; padding: 10px 12px; border-radius: 3px;
+    border: 1.5px solid var(--line); background: var(--card); color: var(--ink); font-size: 14px; outline: none;
+  }
+  .field-place { grid-column: 1 / -1; }
+  .btn {
+    grid-column: 1 / -1;
+    padding: 12px 14px; border-radius: 3px; font-size: 13px; font-weight: 700; text-transform: uppercase;
+    cursor: pointer; border: none; background: var(--accent); color: var(--card);
+  }
+  .btn:disabled { opacity: 0.6; cursor: default; }
+  .banner { margin: 0 16px 16px; padding: 10px 14px; font-size: 13px; border-radius: 3px; }
+  .banner.error { background: #F3E3D8; color: var(--stamp); }
+  .banner.info { background: #EFEADA; color: var(--faint); }
+  .results { padding: 0 16px; display: grid; gap: 10px; }
+  .card {
+    background: var(--card); border: 1.5px solid var(--line); border-radius: 4px; padding: 14px;
+  }
+  .card h3 { margin: 0 0 6px; font-size: 15px; }
+  .card .meta { font-size: 12px; color: var(--faint); }
+  .card .price { margin-top: 8px; font-size: 16px; font-weight: 700; color: var(--accent-dark); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Feriensuche</h1>
+  <div class="subtitle">Echte Verfügbarkeit für deinen Zeitraum – keine Schätzung</div>
+</header>
+
+<form id="search-form">
+  <div class="field-place">
+    <label for="place">Ort / Region</label>
+    <input id="place" name="place" placeholder="z. B. Wien" required>
+  </div>
+  <div>
+    <label for="checkIn">Anreise</label>
+    <input id="checkIn" name="checkIn" type="date" required>
+  </div>
+  <div>
+    <label for="checkOut">Abreise</label>
+    <input id="checkOut" name="checkOut" type="date" required>
+  </div>
+  <div>
+    <label for="adults">Erwachsene</label>
+    <input id="adults" name="adults" type="number" min="1" value="2" required>
+  </div>
+  <button class="btn" type="submit" id="submit-btn">Verfügbarkeit prüfen</button>
+</form>
+
+<div id="banner"></div>
+<div class="results" id="results"></div>
+
+<script>
+const form = document.getElementById('search-form');
+const banner = document.getElementById('banner');
+const results = document.getElementById('results');
+const submitBtn = document.getElementById('submit-btn');
+
+function showBanner(message, type) {
+  banner.innerHTML = message ? `<div class="banner ${type}">${message}</div>` : '';
+}
+
+function renderResults(data) {
+  results.innerHTML = '';
+  if (!data.results.length) {
+    showBanner(`Keine verfügbaren Unterkünfte in ${data.place} für diesen Zeitraum gefunden.`, 'info');
+    return;
+  }
+  showBanner(`${data.count} verfügbare Unterkünfte in ${data.place}`, 'info');
+  for (const item of data.results) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <h3>${item.name}</h3>
+      <div class="meta">${item.offer.checkInDate} – ${item.offer.checkOutDate} · ${item.offer.room?.category || ''}</div>
+      <div class="price">${item.offer.price ?? '?'} ${item.offer.currency ?? ''}</div>
+    `;
+    results.appendChild(card);
+  }
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  showBanner('', '');
+  results.innerHTML = '';
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Suche läuft…';
+
+  const params = new URLSearchParams({
+    place: form.place.value,
+    checkIn: form.checkIn.value,
+    checkOut: form.checkOut.value,
+    adults: form.adults.value,
+  });
+
+  try {
+    const res = await fetch(`/api/search?${params}`);
+    const data = await res.json();
+    if (!res.ok) {
+      showBanner(data.error || 'Unbekannter Fehler', 'error');
+    } else {
+      renderResults(data);
+    }
+  } catch (err) {
+    showBanner('Verbindung zum Server fehlgeschlagen.', 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Verfügbarkeit prüfen';
+  }
+});
+</script>
+</body>
+</html>

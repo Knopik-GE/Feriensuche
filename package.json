@@ -1,0 +1,14 @@
+{
+  "name": "feriensuche",
+  "version": "0.1.0",
+  "description": "Live-Suche nach real verfügbaren Ferienunterkünften über die Amadeus Hotel API",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "dotenv": "^16.4.5"
+  }
+}

@@ -10,15 +10,33 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
 app.get('/api/search', async (req, res) => {
-  const { place, checkIn, checkOut, adults } = req.query;
+  const { country, city, checkIn, checkOut, adults, children, childAges, rooms } = req.query;
+  const place = [city, country].filter(Boolean).join(', ');
 
   if (!place || !checkIn || !checkOut) {
-    return res.status(400).json({ error: 'place, checkIn und checkOut sind erforderlich.' });
+    return res.status(400).json({ error: 'Stadt, Land, checkIn und checkOut sind erforderlich.' });
+  }
+
+  const childrenCount = Number(children) || 0;
+  const childAgesArr = childAges
+    ? String(childAges).split(',').map((s) => s.trim()).filter(Boolean).map(Number)
+    : [];
+
+  if (childrenCount > 0 && childAgesArr.length !== childrenCount) {
+    return res.status(400).json({ error: 'Anzahl der Kinderalter muss zur Anzahl der Kinder passen.' });
   }
 
   try {
     const provider = getProvider();
-    const results = await provider.searchAvailability({ place, checkIn, checkOut, adults });
+    const results = await provider.searchAvailability({
+      place,
+      checkIn,
+      checkOut,
+      adults,
+      children: childrenCount,
+      childAges: childAgesArr,
+      rooms,
+    });
 
     res.json({
       place,

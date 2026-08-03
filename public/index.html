@@ -39,6 +39,8 @@
     border: 1.5px solid var(--line); background: var(--card); color: var(--ink); font-size: 14px; outline: none;
   }
   .field-place { grid-column: 1 / -1; }
+  .field-wide { grid-column: 1 / -1; }
+  .hint { grid-column: 1 / -1; font-size: 11px; color: var(--faint); margin-top: -6px; }
   .btn {
     grid-column: 1 / -1;
     padding: 12px 14px; border-radius: 3px; font-size: 13px; font-weight: 700; text-transform: uppercase;
@@ -64,9 +66,13 @@
 </header>
 
 <form id="search-form">
-  <div class="field-place">
-    <label for="place">Ort / Region</label>
-    <input id="place" name="place" placeholder="z. B. Wien" required>
+  <div>
+    <label for="country">Land</label>
+    <input id="country" name="country" placeholder="z. B. Deutschland" required>
+  </div>
+  <div>
+    <label for="city">Stadt</label>
+    <input id="city" name="city" placeholder="z. B. Berlin" required>
   </div>
   <div>
     <label for="checkIn">Anreise</label>
@@ -80,6 +86,26 @@
     <label for="adults">Erwachsene</label>
     <input id="adults" name="adults" type="number" min="1" value="2" required>
   </div>
+  <div>
+    <label for="children">Kinder</label>
+    <input id="children" name="children" type="number" min="0" value="2">
+  </div>
+  <div class="field-wide" id="childAges-field" style="display:none">
+    <label for="childAges">Alter der Kinder (kommagetrennt)</label>
+    <input id="childAges" name="childAges" placeholder="z. B. 5, 8" value="12, 15">
+  </div>
+  <div class="field-wide">
+    <label><input type="checkbox" id="extraAdult" style="width:auto; margin-right:6px;">+ 1 Erwachsener (18 Jahre) kommt dazu</label>
+  </div>
+  <div>
+    <label for="rooms">Zimmer</label>
+    <input id="rooms" name="rooms" type="number" min="1" value="1">
+  </div>
+  <div>
+    <label for="maxBudget">Max. Budget (gesamter Aufenthalt)</label>
+    <input id="maxBudget" name="maxBudget" type="number" min="0" placeholder="optional">
+  </div>
+  <div class="hint">Budget filtert nur die angezeigten Ergebnisse und vergleicht Preise unabhängig von der Währung – bei Anbietern mit mehreren Plattformen können unterschiedliche Währungen auftauchen.</div>
   <button class="btn" type="submit" id="submit-btn">Verfügbarkeit prüfen</button>
 </form>
 
@@ -91,19 +117,47 @@ const form = document.getElementById('search-form');
 const banner = document.getElementById('banner');
 const results = document.getElementById('results');
 const submitBtn = document.getElementById('submit-btn');
+const childrenInput = document.getElementById('children');
+const childAgesField = document.getElementById('childAges-field');
+const childAgesInput = document.getElementById('childAges');
+const adultsInput = document.getElementById('adults');
+const extraAdultCheckbox = document.getElementById('extraAdult');
+
+function toggleChildAges() {
+  const show = Number(childrenInput.value) > 0;
+  childAgesField.style.display = show ? '' : 'none';
+  childAgesInput.required = show;
+}
+childrenInput.addEventListener('input', toggleChildAges);
+toggleChildAges();
+
+extraAdultCheckbox.addEventListener('change', () => {
+  const delta = extraAdultCheckbox.checked ? 1 : -1;
+  adultsInput.value = Math.max(1, Number(adultsInput.value) + delta);
+});
 
 function showBanner(message, type) {
   banner.innerHTML = message ? `<div class="banner ${type}">${message}</div>` : '';
 }
 
-function renderResults(data) {
+function renderResults(data, maxBudget) {
   results.innerHTML = '';
-  if (!data.results.length) {
-    showBanner(`Keine verfügbaren Unterkünfte in ${data.place} für diesen Zeitraum gefunden. (Quelle: ${data.provider})`, 'info');
+  let list = data.results;
+  let filteredOut = 0;
+  if (maxBudget) {
+    const before = list.length;
+    list = list.filter((item) => item.price == null || Number(item.price) <= maxBudget);
+    filteredOut = before - list.length;
+  }
+
+  if (!list.length) {
+    showBanner(`Keine verfügbaren Unterkünfte in ${data.place} für diesen Zeitraum gefunden${maxBudget ? ' innerhalb des Budgets' : ''}. (Quelle: ${data.provider})`, 'info');
     return;
   }
-  showBanner(`${data.count} verfügbare Unterkünfte in ${data.place} · Quelle: ${data.provider}`, 'info');
-  for (const item of data.results) {
+
+  const budgetNote = filteredOut ? ` · ${filteredOut} über Budget ausgeblendet` : '';
+  showBanner(`${list.length} verfügbare Unterkünfte in ${data.place} · Quelle: ${data.provider}${budgetNote}`, 'info');
+  for (const item of list) {
     const card = document.createElement('div');
     card.className = 'card';
     card.innerHTML = `
@@ -119,15 +173,31 @@ form.addEventListener('submit', async (e) => {
   e.preventDefault();
   showBanner('', '');
   results.innerHTML = '';
+
+  const childrenCount = Number(form.children.value) || 0;
+  const childAges = childAgesInput.value.split(',').map((s) => s.trim()).filter(Boolean);
+  if (childrenCount > 0 && childAges.length !== childrenCount) {
+    showBanner('Bitte für jedes Kind ein Alter angeben (kommagetrennt).', 'error');
+    return;
+  }
+
   submitBtn.disabled = true;
   submitBtn.textContent = 'Suche läuft…';
 
   const params = new URLSearchParams({
-    place: form.place.value,
+    country: form.country.value,
+    city: form.city.value,
     checkIn: form.checkIn.value,
     checkOut: form.checkOut.value,
     adults: form.adults.value,
+    children: childrenCount,
+    rooms: form.rooms.value,
   });
+  if (childrenCount > 0) {
+    params.set('childAges', childAges.join(','));
+  }
+
+  const maxBudget = form.maxBudget.value ? Number(form.maxBudget.value) : null;
 
   try {
     const res = await fetch(`/api/search?${params}`);
@@ -135,7 +205,7 @@ form.addEventListener('submit', async (e) => {
     if (!res.ok) {
       showBanner(data.error || 'Unbekannter Fehler', 'error');
     } else {
-      renderResults(data);
+      renderResults(data, maxBudget);
     }
   } catch (err) {
     showBanner('Verbindung zum Server fehlgeschlagen.', 'error');

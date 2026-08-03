@@ -17,11 +17,15 @@ Umschaltbar über `HOTEL_PROVIDER` in `.env`:
 | [StayingAPI](https://stayingapi.com) | `stayingapi` (Default) | Aggregator über Booking.com, Expedia, Airbnb, Agoda, Vrbo, Google Hotels, Trip.com. 50 Gratis-Requests ohne Kreditkarte. Kein offizieller OTA-Partner – Drittanbieter, potenziell weniger stabil. |
 | [Hotelbeds APItude](https://developer.hotelbeds.com) | `hotelbeds` | Offizieller B2B-Reisevertrieb, 300.000+ Hotels, kostenloser Evaluation-Tarif. Aufwendigerer Signup, dafür stabiler/offizieller. |
 
-Beide wurden aus dieser Entwicklungsumgebung heraus **nicht live gegen echte Keys
-getestet** (Netzwerk-Policy blockiert Drittanbieter-Domains in der Sandbox). Die
-Implementierung basiert auf öffentlicher Doku/Recherche – beim ersten echten
-Testlauf Parameter-Namen/Response-Felder gegenprüfen und bei Bedarf in
-`providers/stayingapi.js` bzw. `providers/hotelbeds.js` anpassen.
+Beide Provider wurden inzwischen mit echten Keys live gegen die jeweilige API
+getestet:
+
+- **StayingAPI**: Suche über `/v1/search` liefert echte Ergebnisse; bei
+  absehbarer Laufzeit >8s antwortet die API mit `202` + Job-ID statt direkt
+  mit Ergebnissen, das wird über `GET /jobs/{jobId}` gepollt. Free-Tier-Credits
+  sind schnell aufgebraucht (Multi-Plattform-Suchen sind teuer).
+- **Hotelbeds** (Sandbox/`test`-Environment): Geocoding + signierte
+  Booking-API-Suche funktionieren wie dokumentiert, keine Anpassungen nötig.
 
 ## Setup
 

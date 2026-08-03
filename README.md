@@ -17,11 +17,13 @@ Umschaltbar über `HOTEL_PROVIDER` in `.env`:
 | [StayingAPI](https://stayingapi.com) | `stayingapi` (Default) | Aggregator über Booking.com, Expedia, Airbnb, Agoda, Vrbo, Google Hotels, Trip.com. 50 Gratis-Requests ohne Kreditkarte. Kein offizieller OTA-Partner – Drittanbieter, potenziell weniger stabil. |
 | [Hotelbeds APItude](https://developer.hotelbeds.com) | `hotelbeds` | Offizieller B2B-Reisevertrieb, 300.000+ Hotels, kostenloser Evaluation-Tarif. Aufwendigerer Signup, dafür stabiler/offizieller. |
 
-Beide wurden aus dieser Entwicklungsumgebung heraus **nicht live gegen echte Keys
-getestet** (Netzwerk-Policy blockiert Drittanbieter-Domains in der Sandbox). Die
-Implementierung basiert auf öffentlicher Doku/Recherche – beim ersten echten
+**StayingAPI** wurde live gegen das echte `https://api.stayingapi.com/openapi.json`
+verifiziert (Parameter-Namen und Response-Schema stimmen jetzt mit
+`providers/stayingapi.js` überein); ein authentifizierter Testlauf mit echtem Key
+steht noch aus. **Hotelbeds** wurde aus dieser Entwicklungsumgebung heraus
+**nicht live getestet** (Doku-Domain war nicht erreichbar) – beim ersten echten
 Testlauf Parameter-Namen/Response-Felder gegenprüfen und bei Bedarf in
-`providers/stayingapi.js` bzw. `providers/hotelbeds.js` anpassen.
+`providers/hotelbeds.js` anpassen.
 
 ## Setup
 

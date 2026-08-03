@@ -1,12 +1,11 @@
 // Anbindung an StayingAPI (https://stayingapi.com) – Aggregator über Booking.com,
 // Expedia, Airbnb, Agoda, Vrbo, Google Hotels, Trip.com u. a.
 //
-// ACHTUNG: Kein offizieller OTA-Partner, sondern ein Drittanbieter. Die Parameter
-// unten basieren auf dem öffentlichen README (github.com/stayingapi/hotel-api) und
-// Suchergebnissen – die exakten Query-Parameter von /v1/search konnten wegen
-// Netzwerk-Restriktionen in der Entwicklungsumgebung nicht live gegen
-// https://api.stayingapi.com/openapi.json verifiziert werden. Beim ersten echten
-// Testlauf gegen stayapi.com/docs abgleichen und ggf. Parameter-Namen anpassen.
+// ACHTUNG: Kein offizieller OTA-Partner, sondern ein Drittanbieter. Parameter und
+// Response-Mapping wurden gegen das echte https://api.stayingapi.com/openapi.json
+// verifiziert (GET /search: checkIn/checkOut sind camelCase; Property-Objekte
+// liefern platformListingId statt platform_id und price.totalPrice/nightlyPrice
+// statt price.amount).
 
 const BASE_URL = 'https://api.stayingapi.com/v1';
 
@@ -18,8 +17,8 @@ async function searchAvailability({ place, checkIn, checkOut, adults }) {
 
   const url = new URL(`${BASE_URL}/search`);
   url.searchParams.set('location', place);
-  url.searchParams.set('checkin', checkIn);
-  url.searchParams.set('checkout', checkOut);
+  url.searchParams.set('checkIn', checkIn);
+  url.searchParams.set('checkOut', checkOut);
   url.searchParams.set('adults', adults || 2);
   url.searchParams.set('limit', '20');
 
@@ -36,11 +35,11 @@ async function searchAvailability({ place, checkIn, checkOut, adults }) {
   }
 
   return (data.data || []).map((item) => ({
-    hotelId: item.id || item.platform_id || `${item.platform}:${item.name}`,
+    hotelId: item.id || item.platformListingId || `${item.platform}:${item.name}`,
     name: item.name,
     checkInDate: checkIn,
     checkOutDate: checkOut,
-    price: item.price?.amount ?? item.price,
+    price: item.price?.totalPrice ?? null,
     currency: item.price?.currency,
     source: item.platform || 'stayingapi',
   }));

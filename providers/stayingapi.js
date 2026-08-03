@@ -51,7 +51,7 @@ async function pollJob(jobId, key) {
   }
 }
 
-async function searchAvailability({ place, checkIn, checkOut, adults }) {
+async function searchAvailability({ place, checkIn, checkOut, adults, children, childAges, rooms }) {
   const key = process.env.STAYINGAPI_KEY;
   if (!key) {
     throw new Error('STAYINGAPI_KEY fehlt (siehe .env.example, Signup ohne Kreditkarte auf stayingapi.com)');
@@ -62,6 +62,13 @@ async function searchAvailability({ place, checkIn, checkOut, adults }) {
   url.searchParams.set('checkIn', checkIn);
   url.searchParams.set('checkOut', checkOut);
   url.searchParams.set('adults', adults || 2);
+  url.searchParams.set('rooms', rooms || 1);
+  if (children) {
+    url.searchParams.set('children', children);
+    // Live verifiziert: childAges ist Pflicht sobald children > 0 (Fehler
+    // "child_ages_mismatch" sonst); Länge muss zu children passen.
+    url.searchParams.set('childAges', (childAges || []).join(','));
+  }
   url.searchParams.set('limit', '20');
 
   const res = await fetch(url, {

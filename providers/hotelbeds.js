@@ -22,7 +22,7 @@ function buildSignature(apiKey, secret) {
   return crypto.createHash('sha256').update(`${apiKey}${secret}${timestamp}`).digest('hex');
 }
 
-async function searchAvailability({ place, checkIn, checkOut, adults }) {
+async function searchAvailability({ place, checkIn, checkOut, adults, children, childAges, rooms }) {
   const apiKey = process.env.HOTELBEDS_API_KEY;
   const secret = process.env.HOTELBEDS_SECRET;
   if (!apiKey || !secret) {
@@ -34,9 +34,15 @@ async function searchAvailability({ place, checkIn, checkOut, adults }) {
     throw new Error(`Kein Ort gefunden für "${place}".`);
   }
 
+  const occupancy = { rooms: Number(rooms) || 1, adults: Number(adults) || 2, children: Number(children) || 0 };
+  // Live verifiziert: Kinder brauchen ein Alter pro Kind über paxes (type "CH").
+  if (occupancy.children > 0) {
+    occupancy.paxes = (childAges || []).map((age) => ({ type: 'CH', age }));
+  }
+
   const body = {
     stay: { checkIn, checkOut },
-    occupancies: [{ rooms: 1, adults: Number(adults) || 2, children: 0 }],
+    occupancies: [occupancy],
     geolocation: {
       latitude: location.lat,
       longitude: location.lon,

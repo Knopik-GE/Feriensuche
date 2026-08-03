@@ -88,11 +88,14 @@
   </div>
   <div>
     <label for="children">Kinder</label>
-    <input id="children" name="children" type="number" min="0" value="0">
+    <input id="children" name="children" type="number" min="0" value="2">
   </div>
   <div class="field-wide" id="childAges-field" style="display:none">
     <label for="childAges">Alter der Kinder (kommagetrennt)</label>
-    <input id="childAges" name="childAges" placeholder="z. B. 5, 8">
+    <input id="childAges" name="childAges" placeholder="z. B. 5, 8" value="12, 15">
+  </div>
+  <div class="field-wide">
+    <label><input type="checkbox" id="extraAdult" style="width:auto; margin-right:6px;">+ 1 Erwachsener (18 Jahre) kommt dazu</label>
   </div>
   <div>
     <label for="rooms">Zimmer</label>
@@ -117,6 +120,8 @@ const submitBtn = document.getElementById('submit-btn');
 const childrenInput = document.getElementById('children');
 const childAgesField = document.getElementById('childAges-field');
 const childAgesInput = document.getElementById('childAges');
+const adultsInput = document.getElementById('adults');
+const extraAdultCheckbox = document.getElementById('extraAdult');
 
 function toggleChildAges() {
   const show = Number(childrenInput.value) > 0;
@@ -125,6 +130,11 @@ function toggleChildAges() {
 }
 childrenInput.addEventListener('input', toggleChildAges);
 toggleChildAges();
+
+extraAdultCheckbox.addEventListener('change', () => {
+  const delta = extraAdultCheckbox.checked ? 1 : -1;
+  adultsInput.value = Math.max(1, Number(adultsInput.value) + delta);
+});
 
 function showBanner(message, type) {
   banner.innerHTML = message ? `<div class="banner ${type}">${message}</div>` : '';

@@ -99,17 +99,17 @@ function showBanner(message, type) {
 function renderResults(data) {
   results.innerHTML = '';
   if (!data.results.length) {
-    showBanner(`Keine verfügbaren Unterkünfte in ${data.place} für diesen Zeitraum gefunden.`, 'info');
+    showBanner(`Keine verfügbaren Unterkünfte in ${data.place} für diesen Zeitraum gefunden. (Quelle: ${data.provider})`, 'info');
     return;
   }
-  showBanner(`${data.count} verfügbare Unterkünfte in ${data.place}`, 'info');
+  showBanner(`${data.count} verfügbare Unterkünfte in ${data.place} · Quelle: ${data.provider}`, 'info');
   for (const item of data.results) {
     const card = document.createElement('div');
     card.className = 'card';
     card.innerHTML = `
       <h3>${item.name}</h3>
-      <div class="meta">${item.offer.checkInDate} – ${item.offer.checkOutDate} · ${item.offer.room?.category || ''}</div>
-      <div class="price">${item.offer.price ?? '?'} ${item.offer.currency ?? ''}</div>
+      <div class="meta">${item.checkInDate} – ${item.checkOutDate} · ${item.source}</div>
+      <div class="price">${item.price ?? '?'} ${item.currency ?? ''}</div>
     `;
     results.appendChild(card);
   }
